@@ -1,0 +1,18 @@
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300);
+html, body, .wrap {
+  height: 100%;
+}
+
+/* body {
+  background: black;
+  overflow: hidden;
+  color: white;
+  font-family: Open sans;
+}
+ */
+.wrap {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+
