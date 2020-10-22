@@ -308,7 +308,7 @@ var config = {
 
     // Enables calendar integration, depends on googleApiApplicationClientID
     // and microsoftApiApplicationClientID
-    // enableCalendarIntegration: false,
+    enableCalendarIntegration: false,
 
     // Stats
     //
@@ -649,7 +649,7 @@ var interfaceConfig = {
      */
     HIDE_INVITE_MORE_HEADER: true,
 
-    INITIAL_TOOLBAR_TIMEOUT:  10,
+    INITIAL_TOOLBAR_TIMEOUT: 10,
     JITSI_WATERMARK_LINK: 'https://www.charleville-mezieres.fr/',
 
     LANG_DETECTION: true, // Allow i18n to detect the system language
@@ -751,7 +751,7 @@ var interfaceConfig = {
     // screen, 'height' would fit the original video height to the height of the
     // screen, 'width' would fit the original video width to the width of the
     // screen respecting ratio.
-    VIDEO_LAYOUT_FIT: 'height',
+    VIDEO_LAYOUT_FIT: 'both',
 
     /**
      * If true, hides the video quality label indicating the resolution status
@@ -833,57 +833,51 @@ const options = {
 };
 
 
-var api;// = new JitsiMeetExternalAPI(domain, options);
-//api.getIFrame().setAttribute("allow", "microphone; camera");
-
-//api.executeCommand('toggleLobby', false);
+var api;
 const TIMEOUT = 45000;
 const timeBeforeHangup = 10000;
 var finishTimer;
 var popupTimer;
-
+var PSW = "SecretPassword";
 var joined = false;
-//startJitsi();
-console.log(window.location.href);
-console.log("=================");
 
-document.addEventListener("keypress",keypushed,useCapture=true);
-document.addEventListener("keydown",function(e){
-    console.log(">>>>>>>>>>>> "+e); 
+
+document.addEventListener("keypress", keypushed, useCapture = true);
+
+document.addEventListener("keydown", function (e) {
+    //console.log(">>>>>>>>>>>> " + e);
     api.isAudioMuted().then(muted => {
         if (muted) {
             api.executeCommand('toggleAudio');
         }
     });
-    console.log(e);
 });
-document.addEventListener("keyup",function(e){
-    console.log("<<<<<<<<<<<< "+e);
+
+document.addEventListener("keyup", function (e) {
     api.isAudioMuted().then(muted => {
-        if (!muted){
+        if (!muted) {
             api.executeCommand('toggleAudio');
         }
-        
-    });
-    console.log(e);
 
-}); 
+    });
+});
+
 //document.onkeypress = function (e) {
-function keypushed(e){
+function keypushed(e) {
     e = e || window.event;
     if (e.keyCode == 32) {
-        console.log("$$$$ touche Espace appuyée");
-        if (joined){
-            console.log("...joined : ");
+        //console.log("$$$$ touche Espace appuyée");
+        if (joined) {
+            //console.log("...joined : ");
             restartTimeout();
         }
         else {
-            console.log("...not joined : ");
-            joined = true
+            //console.log("...not joined : ");
+            joined = true;
             startJitsi();
         }
     }
-    console.log("$$$$ TOUCHE : " + e.keyCode);
+    //console.log("$$$$ TOUCHE : " + e.keyCode);
 
 }
 
@@ -895,95 +889,69 @@ function startJitsi() {
     iframe.style.display = "none";
     api.executeCommand('displayName', getName());
     api.executeCommand('subject', 'Hole In Time');
-    
+    // set new password for channel
+    api.addEventListener('participantRoleChanged', function (event) {
+        if (event.role === "moderator") {
+            api.executeCommand('password', PSW);
+        }
+    });
+    // join a protected channel
+    api.on('passwordRequired', function () {
+        api.executeCommand('password', PSW);
+    });
     //api.executeCommand('setVideoQuality', 720);
     // api.executeCommand('toggleVideo');
     // api.executeCommand('toggleFilmStrip');
     api.executeCommand('avatarUrl', 'https://www.gravatar.com/avatar/4c65f7fb8156eabd64a6f0cfa93058c8');
-    
-     
-    api.on('audioMuteStatusChanged', function (event)
-    {
-        console.log("$$$$ EVENT : audio mute changed !");
-        // if (event.muted){
-        //     console.log("muted !");
-        // }
-        // else {
-        //     console.log("unmuted !");
-        // }
-        //restartTimeout();
+    api.executeCommand('setLargeVideoParticipant');
+
+    api.on('audioMuteStatusChanged', function (event) {
+        //console.log("$$$$ EVENT : audio mute changed !");
         
     });
-    api.on('videoConferenceJoined', function (event)
-    {
-        console.log("$$$$$$$$$$$$ EVENT : joined conference !");
+    
+    api.on('videoConferenceJoined', function (event) {
         hidePopup();
         iframe = api.getIFrame();
-        iframe.style.display = ""; // display the iFrame
+        iframe.style.display = ""; 
         startTimeout();
-        
-        console.log(event);
-        
     });
-    
-    
 }
 
-
-
-
-// popup.addEventListener('click', event => {
-//     hidePopup();
-//     //api.executeCommand("hangup");
-//     startJitsi();
-// });
-
-
 function finishCall() {
-    console.log("$$$$ FINISH CALL");
     //hide jitsiIframe
-    console.log("FINISH CALL");
     iframe = api.getIFrame();
-    //iframe.style.display = "none";
-    //hangup call
     api.executeCommand("hangup");
-    
     showPopup("Appuyez sur le bouton pour vous connecter");
     api.dispose();
     joined = false;
-    
+
 }
 
 function showPopup(message) {
-    console.log("$$$$ SHOW POPUP '"+message+"'");
     var popup = document.querySelector('#popup');
     popup.innerHTML = message;
-    //affiche la popup
     popup.style.display = "";
-    // masque l'iframe
-
 }
+
 function hidePopup() {
-    console.log("$$$$ HIDE POPUP");
     var popup = document.querySelector('#popup');
     popup.style.display = "none";
 }
 function showPopupHangup() {
-    showPopup("Vosu allez sortir de la conversation dans "+timeBeforeHangup/1000+ " secondes...")
+    showPopup("Vous allez sortir de la conversation dans " + timeBeforeHangup / 1000 + " secondes...")
 }
+
 function restartTimeout() {
-    console.log("$$$$ timeout reset ("+finishTimer+")");
-    console.log(finishTimer);
     clearTimeout(finishTimer);
     clearTimeout(popupTimer);
-    hidePopup(); 
+    hidePopup();
     startTimeout();
 }
+
 function startTimeout() {
-    console.log("$$$$ Start timeout")
     finishTimer = setTimeout(finishCall, TIMEOUT);
-    popupTimer = setTimeout(showPopupHangup, TIMEOUT-timeBeforeHangup);
-    console.log(finishTimer);
+    popupTimer = setTimeout(showPopupHangup, TIMEOUT - timeBeforeHangup);
 }
 
 
@@ -999,7 +967,7 @@ function getAnchor() {
  * Return name using anchor URL
  */
 function getName() {
-    var name =  getAnchor() || "NoName";
+    var name = getAnchor() || "NoName";
     const regex = /[\._-]/g;
     return decodeURI(name).replace(regex, ' ');
 }
